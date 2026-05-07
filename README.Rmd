@@ -42,7 +42,7 @@ Lets build a standard genomic SNV circos plot up from scratch.
 
 ### Minimal Circos Plot
 
-```{r quick-start}
+```{r quick-start, eval=FALSE}
 library(ggcircos)
 
 ## Read in Data
@@ -64,7 +64,7 @@ methylation <- read.csv(methylation_tsv, sep = "\t")
 multiomic_circos <- ggcircos(hg38) |>
   add_centromeres(centromeres) |>
   add_telomeres(telomeres) |>
-  add_mutations(mutations) |> 
+  add_mutations(mutations) |>
   add_copynumber(copynumber_segments) |>
   add_methylation(methylation_tsv)
 

@@ -1,0 +1,83 @@
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+# ggcircos
+
+<!-- badges: start -->
+
+<!-- badges: end -->
+
+Create interactive circos plots from tidy data.frames.
+
+Circos plots can be built up layer by layer.
+
+## Installation
+
+You can install the development version of ggcircos from
+[GitHub](https://github.com/) with:
+
+``` r
+# install.packages("pak")
+pak::pak("selkamand/ggcircos")
+```
+
+## Quick start
+
+Lets build a standard genomic SNV circos plot up from scratch.
+
+1.  Start by creating the basic reference structure. You can either
+    supply a custom .fai index of your reference genome, or use one of
+    our prebuilt templates for common reference genomes
+    (e.g. reference_hg38).
+
+### Minimal Circos Plot
+
+``` r
+library(ggcircos)
+
+## Read in Data
+fai <- system.file("hg38.fai", package = "ggcircos")
+centromeres_tsv <- system.file("hg38.centromeres.fai", package = "ggcircos")
+telomeres_tsv <- system.file("hg38.telomers.fai", package = "ggcircos")
+mutations_tsv <- system.file("hg38.mutations.fai", package = "ggcircos")
+copynumber_tsv <- system.file("hg38.segments.tsv", package = "ggcircos")
+methylation_tsv <- system.file("hg38.methylation.tsv", package = "ggcircos")
+
+# Read in data
+hg38 <- fai_to_reference(fai)
+centromeres <- read.csv(centromeres_tsv, sep = "\t")
+telomeres <- read.csv(telomeres, sep = "\t")
+mutations <- read.csv(mutations_tsv, sep = "\t")
+methylation <- read.csv(methylation_tsv, sep = "\t")
+
+# Create Circos Plot
+multiomic_circos <- ggcircos(hg38) |>
+  add_centromeres(centromeres) |>
+  add_telomeres(telomeres) |>
+  add_mutations(mutations) |>
+  add_copynumber(copynumber_segments) |>
+  add_methylation(methylation_tsv)
+
+# Make interactive
+make_interactive(multiomic_circos)
+```
+
+## How do I get my data into ggcircos-compatible formats?
+
+ggcircos provides tools to help parse different fileformats into the
+data.frames ggcircos expects.
+
+# Limitations
+
+Circos plots rendered as vector graphics are larger and more
+computationaly demanding than raster alternatives, especially when
+viewing highly mutated samples. Adding interactivity bloats the files
+even more, since SVGs must be embedded with tooltip information. If your
+circos plot is too large or not responsive, consider only adding
+tooltips to a subset of your variants, or decreasing the size of the
+tooltips.
+
+One day we may add the ability to render ggcircos output as raster
+graphics, or export the data required to plug into alternate interactive
+circos visualisation apps that make better use locally available compute
+(CPU & GPU).

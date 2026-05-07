@@ -10,18 +10,51 @@
 #' @export
 #'
 #' @examples
-ggcircos <- function(reference, col_name = "chromosome", col_length = "length"){
-
-  # Perform assertions and create a 3 column data.frame with columns: name, start, end
+ggcircos <- function(reference, col_name = "chromosome", col_length = "length", inter_chrom_spacing = 0.1) {
+  # Perform assertions and create a 4 column data.frame with columns: name, start, end, refindex
   reference <- standardise_reference_regions(reference, col_name, col_length)
 
-
   # Output basic ggcircos object
-  list(
-    reference = reference
+  Circos(
+    reference = reference,
+    inter_chrom_spacing = inter_chrom_spacing
   )
 }
 
+generate <- function(circos){
+  assertions::assert_class(circos, "ggcircos::Circos")
+  reference_zone <- circos@zones[[1]]
+  inter_chrom_spacing <- circos@inter_chrom_spacing #Proportion of x axis reserved for gaps (0 - 0.99)
+  refdata=reference_zone@data
+
+  reflength <- sum(reference_zone@data$end)
+  nseqs <- nrow(reference_zone@data)
+
+  if(nseqs == 1) inter_chrom_spacing <- 0
+
+  total_spaces_in_bases <- inter_chrom_spacing * reflength
+  space_per_gap <- total_spaces_in_bases / (nseqs-1)
+
+
+  refdata$cumlength <- cumsum(refdata$end)
+  refdata$cumlength_gapped <- refdata$cumlength + c(0, rep(space_per_gap, times = nseqs - 1))
+
+  # chr_to_start_sum <- refdata$start + dplyr::lag(refdata$cumlength_gapped, default = 0)
+  # names(chr_to_start_sum) <- refdata$name
+
+  refdata$xmin <- refdata$start + dplyr::lag(refdata$cumlength_gapped, default = 0)
+  refdata$xmax <- refdata$cumlength
+
+  browser()
+  ggplot(refdata) + geom_rect(aes(xmin = xmin, xmax = xmax, ymin = 60, ymax = 100),color="black", fill = "white") + geom_label(aes(x = xmin + (xmax-xmin)/2, label = name, y = 50))
+
+  #ggplot2::ggplot(refdata) +
+  #  ggplot2::geom_rect()
+}
+
+#stdref_to_project_point_func <- function(stdref, inter_chrom_){
+#
+#}
 
 #' Parse fai index to reference data.frame
 #'
@@ -35,7 +68,7 @@ ggcircos <- function(reference, col_name = "chromosome", col_length = "length"){
 #' @examples
 #' fai <- system.file("hg38.fai", package = "ggcircos")
 #' fai_to_reference(fai)
-fai_to_reference <- function(fai){
+fai_to_reference <- function(fai) {
   assertions::assert_file_exists(fai)
 
   # Read Data
@@ -51,8 +84,6 @@ fai_to_reference <- function(fai){
   reference <- dfx::bselect(df_fai, columns = c("chromosome", "length"))
 
   # reference <- standardise_reference_regions(df_fai, col_name = "chromosome", col_length = "length")
-
-  # Return Standardised Data
   return(reference)
 }
 
@@ -74,12 +105,11 @@ fai_to_reference <- function(fai){
 #' @export
 #'
 #' @examples
-#' df = data.frame(chromosome = c("chr1", "chr2"), length = c(1000, 2000))
+#' df <- data.frame(chromosome = c("chr1", "chr2"), length = c(1000, 2000))
 #' reference <- standardise_reference_regions(df)
 #' print(reference)
 #'
-standardise_reference_regions <- function(reference, col_name = "chromosome", col_length = "length"){
-
+standardise_reference_regions <- function(reference, col_name = "chromosome", col_length = "length") {
   # Assertions
   assertions::assert_dataframe(reference)
   assertions::assert_string(col_name)
@@ -99,14 +129,19 @@ standardise_reference_regions <- function(reference, col_name = "chromosome", co
     namemap = c(
       "end" = col_length,
       "name" = col_name
-    ))
+    )
+  )
 
   # Add start coord
   reference$start <- 1
 
   # Only return columns of interest
   reference <- dfx::bselect(reference, c("name", "start", "end"))
-  reference$index <- seq_along(reference$name)
+  reference$refindex <- seq_along(reference$name)
+
+  # Ensure data.types are sensible
+  reference$start <- as.numeric(reference$start)
+  reference$end <- as.numeric(reference$end)
 
   # Note at this point reference is 1-based, both-end inclusive format (a.k.a [start, end])
   # This means a [1, 1000] reference entry is a 1000 bp-long region
@@ -129,13 +164,11 @@ standardise_reference_regions <- function(reference, col_name = "chromosome", co
 #' @export
 #'
 #' @examples
-transform_position_to_reference <- function(reference, inter_chrom_gap = 0){
-
-
+transform_position_to_reference <- function(reference, inter_chrom_gap = 0) {
   reference$length <- reference$end
 
   total_length <- sum(reference$length)
-  buffer_size = round(total_length * inter_chrom_gap, digits = 0)
+  buffer_size <- round(total_length * inter_chrom_gap, digits = 0)
 
   reference$realstart <- reference$start
 }
