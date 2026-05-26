@@ -16,23 +16,24 @@ library(ggplot2)
 
 # Philosophy
 
-There are two core components of this package.
+There are three core components of this package.
 
-1. An internal S7 class (CircosBuilder) built for parsing, storing, manipulating, querying and transforming the multiomic data. 
-2. An exposed, highly opinionated api that lazily building up `ggcircos` plots.
+1. An internal S7 class (Circos) built for parsing, storing, manipulating, querying and transforming the multiomic data. 
+2. An exposed, highly opinionated api for track-by-track construction of  `ggcircos` plots.
+3. A series of helpers for parsing common multiomic data into formats that ggoncoplot expects.
 
-For now, we plot the circos itself in ggplot2, and make use of many of its geoms and polar coordinate system, but thats about it. We handle the organisation of different layers of the circos, padding between reference karyotypes and coordinate transformation to respect inter-karyotype padding ourselves. This is important if we ever want to add additional graphing front-ends like base R. 
+For now, we plot the circos itself in ggplot2, and make use of many of its geoms and polar coordinate system, but thats about it. We handle the organisation of different tracks of the circos, padding between reference karyotypes and coordinate transformation to respect inter-karyotype padding ourselves. This is important if we ever want to provide use additional graphing front-ends like base R. 
 
 ## The circos coordinate system
 
-You can think of building a circos plot by first building up a series of vertically stacked rectangular layes that ggplot will later map to a polar coordinate system.
+You can think of building a circos plot by first building up a series of vertically stacked rectangular layers that ggplot will later map to a polar coordinate system.
 
 ```{r}
 gg_horizontal_rectangles <- ggplot() +
   annotate(geom = "rect", xmin = 1, xmax = 100, ymin = 1, ymax = 40, color = "black", fill = "grey") +
   annotate(geom = "rect", xmin = 1, xmax = 100, ymin = 60, ymax = 100, color = "black", fill = "pink") +
-  annotate(geom = "text", x = 50, y = 80, label = "zone 1\n(y=60-100, x = 1-100)", color = "black") +
-  annotate(geom = "text", x = 50, y = 20, label = "zone 2\n(y=1-40, x = 1-100)", color = "black") +
+  annotate(geom = "text", x = 50, y = 80, label = "track 1\n(y=60-100, x = 1-100)", color = "black") +
+  annotate(geom = "text", x = 50, y = 20, label = "track 2\n(y=1-40, x = 1-100)", color = "black") +
   theme_minimal() +
   theme(axis.text.y = element_blank())
 
@@ -45,13 +46,24 @@ gg_horizontal_rectangles + coord_radial(expand = FALSE)
 # If you want axis labels to rotate perpendicular to circle tangent
 gg_horizontal_rectangles + coord_radial(expand = FALSE) + guides(theta = guide_axis_theta(angle = 90), r = guide_axis())
 ```
+
 But how do we turn this into a real circos-like structure? Well lets decide some rules for ourselves.
 
-1. The canvas size is 100x100 and is 1-based start & inclusive. This means we should never allow any graphics we draw to leave 1-100 on either axis. 
-2. We'll call each layer a 'zone'
-3. Once polar coord system is applied, the, zones with higher ymin/ymax will be closer to the outer perimeter.
-4. The outermost zone is reserved for a 'reference' backbone. 
+1. The canvas size is 100x100 and is 1-based start & inclusive. This means we never allow any graphics we draw to leave 1-100 on either axis (except for text labels of chromosomes). 
+2. We'll call each layer a 'track'
+3. Once polar coord system is applied, the, tracks with higher ymin/ymax will be closer to the outer perimeter.
+4. The outermost track is reserved for a 'reference' backbone. 
 5. Based on the total length (+ total gaps between refs) two functions are generated. `project_points` which maps chr:pos positions to their corresponding positions between 1-100 on the x axis, and `project_intervals` which does the same for chr:start-end intervals
 6.  `project_intervals` will be applied to reference reference segments.
 
+## Track widths
 
+A circos object can contain an arbritrary number of tracks, so how do we automatically choose widths in a way that allows users to control them?
+
+Option 1: Just set $\text{track width} = \frac{100}{\text{number of tracks}}$. Then user can modify by 'relative' weight vector (1 per track) that we normalise based on sum of all tracks to total 1. Because some tracks make sense to be bigger than others maybe default weight can be larger for some tracks (e.g. mutation track bigger than).
+
+Then innermost-circle size and inter-track buffers can be a theme property. 
+
+<!-- Option 2: Force user to specify start & stop position for every track (1-100). This breaks a cardinal rule of sensible defaults and makes it way harder to get to your first plot.  -->
+
+<!-- Option 3: Some tracks make sense to be bigger than others.  E.g. mutation track needs more space (for VAFs) then reference track. Should it be a fixed width?  -->

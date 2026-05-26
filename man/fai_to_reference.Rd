@@ -4,10 +4,15 @@
 \alias{fai_to_reference}
 \title{Parse fai index to reference data.frame}
 \usage{
-fai_to_reference(fai)
+fai_to_reference(fai, exclude = NULL)
 }
 \arguments{
 \item{fai}{Path to a .fai index file created by running \verb{samtools faidx <reference.fasta>}.}
+
+\item{exclude}{Names of chromosomes to exclude.
+Many references will include decoy contigs that you probably don't want plotted in your circos.
+It is also common to exclude mitochondrial contigs ('chrM' / 'MT') in eukaryotic genomes since they are too small
+compared to nuclear chromosomes to see well in circos.}
 }
 \value{
 A 2-column data.frame with fields 'chromosome' and 'length' that can be parsed by ggcircos

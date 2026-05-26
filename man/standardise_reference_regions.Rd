@@ -29,7 +29,7 @@ by downstream functions to convert chrom-pos positions into a single coord posit
 Standardise reference regions
 }
 \examples{
-df = data.frame(chromosome = c("chr1", "chr2"), length = c(1000, 2000))
+df <- data.frame(chromosome = c("chr1", "chr2"), length = c(1000, 2000))
 reference <- standardise_reference_regions(df)
 print(reference)
 

@@ -4,7 +4,12 @@
 \alias{ggcircos}
 \title{Create a base circos plot}
 \usage{
-ggcircos(reference, col_name = "chromosome", col_length = "length")
+ggcircos(
+  reference,
+  col_name = "chromosome",
+  col_length = "length",
+  inter_chrom_spacing = 0.1
+)
 }
 \arguments{
 \item{reference}{a 2-column data.frame describing the name and length of each reference sequence.
@@ -19,4 +24,17 @@ A ggplot canvas with karyotype information
 }
 \description{
 Create a base circos plot
+}
+\examples{
+## Filepaths
+fai <- system.file("hg38.fai", package = "ggcircos")
+mutations_tsv <- system.file("hg38.mutations.fai", package = "ggcircos")
+
+# Read in data
+hg38 <- fai_to_reference(fai)
+mutations <- read.csv(mutations_tsv, sep = "\t")
+
+# Create Circos Plot
+multiomic_circos <- ggcircos(hg38) |>
+  add_mutations(mutations)
 }

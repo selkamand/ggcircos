@@ -23,8 +23,6 @@ Create interactive circos plots from tidy data.frames.
 Circos plots can be built up layer by layer.
 
 
-
-
 ## Installation
 
 You can install the development version of ggcircos from [GitHub](https://github.com/) with:
@@ -48,8 +46,8 @@ library(ggcircos)
 ## Read in Data
 fai <- system.file("hg38.fai", package = "ggcircos")
 centromeres_tsv <- system.file("hg38.centromeres.fai", package = "ggcircos")
-telomeres_tsv <- system.file("hg38.telomers.fai", package = "ggcircos")
-mutations_tsv <- system.file("hg38.mutations.fai", package = "ggcircos")
+telomeres_tsv <- system.file("hg38.telomeres.tsv", package = "ggcircos")
+mutations_tsv <- system.file("hg38.mutations.tsv", package = "ggcircos")
 copynumber_tsv <- system.file("hg38.segments.tsv", package = "ggcircos")
 methylation_tsv <- system.file("hg38.methylation.tsv", package = "ggcircos")
 
@@ -58,6 +56,7 @@ hg38 <- fai_to_reference(fai)
 centromeres <- read.csv(centromeres_tsv, sep = "\t")
 telomeres <- read.csv(telomeres, sep = "\t")
 mutations <- read.csv(mutations_tsv, sep = "\t")
+mutations$Vaf <- 0.5
 methylation <- read.csv(methylation_tsv, sep = "\t")
 
 # Create Circos Plot
@@ -67,6 +66,13 @@ multiomic_circos <- ggcircos(hg38) |>
   add_mutations(mutations) |>
   add_copynumber(copynumber_segments) |>
   add_methylation(methylation_tsv)
+
+# Create Basic Circos 
+# multiomic_circos <- ggcircos(hg38) |>
+#   add_mutations(mutations, col_chrom = "Chromosome", col_pos = "Position", col_vaf = "Vaf") |>
+#   generate()
+
+
 
 # Make interactive
 make_interactive(multiomic_circos)
